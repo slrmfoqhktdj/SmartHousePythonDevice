@@ -49,7 +49,7 @@ deviceid = "device01"
 auto = True
 
 #센서값
-temp_val = 13
+temp_val = 15
 humi_val = 60
 co2_sensor_val = 15
 ph_ec_sensor_val = 35
@@ -198,6 +198,7 @@ def on_message(ws, message):
                                 else :
                                         senddata = json.dumps([3,data[1],{"id":deviceid,"result": False}])
                                         ws.send(senddata)
+
                         elif data[2]=="ACMDCOMPUMP":#예약 컴프펌프 onoff
                                 if not data[3]['startt'] and not data[3]['stopt'] and data[3]['onoff'] :
                                         senddata = json.dumps([3,data[1],{"id":deviceid,"result": False}])
@@ -281,6 +282,13 @@ def on_message(ws, message):
                                                                                                         {"name":"co2creator","startt":appoint_co2creator_startTime,"stopt":appoint_co2creator_stopTime,"onoff":appoint_co2creator_onoff},
                                                                                                         {"name":"led","startt":appoint_led_startTime,"stopt":appoint_led_stopTime,"onoff":appoint_led_onoff}]}])
                 ws.send(senddata)
+        elif data[2]=="CMDLOGUPLOAD":
+                id = data[3]['id']
+                upload_location = data[3]['location']
+                log_starttime = data[3]['startTime']
+                log_stoptime = data[3]['stopTime']
+                senddata = json.dumps([3,data[1],{"fileName":""}])
+                ws.send(senddata)
 
 def on_connect(ws):
         logging.info("connected!")  # 연결됨 메시지 출력
@@ -302,7 +310,7 @@ def on_connect(ws):
         # senddata = json.dumps([2,datauuid,"REPORTAuto",{"id":"device01","value":1 if auto else 0}])  # 자동 수동 바뀔때 
         # ws.send(senddata)
         
-        # 연결 시 boot 상태 보고
+        # 연결 시 boot 상태 보고 및 등록
         senddata = json.dumps([2,create_unique_id(),"BOOTDEVICE",{"id":deviceid , "comp":comp_onoff , "pump":pump_onoff , "temp": temp_val, "humi":humi_val , "f_fan":ffan_onoff , "e_fan":efan_onoff , "aircon":aircon_onoff , "co2_sensor":co2_sensor_val,"co2_creator":co2creator_onoff , "ph_ec_sensor": ph_ec_sensor_val, "led":led_onoff , "cctv":cctv_url , "auto":auto}])  
         ws.send(senddata)
 
