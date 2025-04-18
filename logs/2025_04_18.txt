@@ -1,0 +1,6 @@
+12:00:10 - 온도:15,습도:60,co2센서:15,ph_ec센서:35
+12:02:37 - 서버 에러 : unsupported operand type(s) for +: 'datetime.datetime' and 'str'
+12:03:35 - 서버 에러 : can't compare offset-naive and offset-aware datetimes
+13:10:38 - 서버 에러 : can't compare offset-naive and offset-aware datetimes
+13:12:37 - 서버 에러 : can't compare offset-naive and offset-aware datetimes
+13:47:49 - 서버 에러 : time data 'device01&&20250415&&20250418.txt' does not match format '%Y_%m_%d.txt'
