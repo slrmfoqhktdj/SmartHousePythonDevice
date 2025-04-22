@@ -17,7 +17,7 @@
 
 
 import json
-from websocket import WebSocketApp, WebSocketConnectionClosedException
+from websocket import WebSocketApp
 import logging
 import time
 import uuid
@@ -31,6 +31,8 @@ import threading
 from dateutil import parser
 from glob import glob
 from natsort import natsorted
+from multiprocessing.connection import Client
+import sys
 
 #기기 id
 deviceid = "device01"
@@ -54,6 +56,15 @@ logupload_server_url = "http://localhost:5025/"
 
 #로그 파일 저장소 주소
 log_file_url = "./logs/"
+
+#로그 업로드 서버 주소 
+program_update_server_url = "http://localhost:5025/"
+
+#업데이트 파일 저장소 주소
+update_file_url = "./update_programs/"
+
+#업데이트 명령어 커멘드
+upgradeProgram = "upgradeProgram"
 
 
 #자동수동       - True, 1: 자동    False,0 : 수동
@@ -126,6 +137,7 @@ def getFindLogFileDate(isostr):
 def on_message(ws, message):
         data = json.loads(message)  # JSON 데이터 파싱
         logging.info(data)
+        print(data, flush=True)
 
         global auto
 
@@ -298,7 +310,7 @@ def on_message(ws, message):
                                                                                                         {"name":"co2creator","startt":appoint_co2creator_startTime,"stopt":appoint_co2creator_stopTime,"onoff":appoint_co2creator_onoff},
                                                                                                         {"name":"led","startt":appoint_led_startTime,"stopt":appoint_led_stopTime,"onoff":appoint_led_onoff}]}])
                 ws.send(senddata)
-        elif data[2]=="CMDLOGUPLOAD":
+        elif data[2]=="CMDLOGUPLOAD":#로그 업로드
                 id = data[3]['id']
                 upload_location = data[3]['location']
                 log_starttime = getFindLogFileDate(data[3]['startTime'])
@@ -321,6 +333,22 @@ def on_message(ws, message):
                 
                 senddata = json.dumps([3,data[1],{"fileName":log_file_name}])
                 ws.send(senddata)
+        elif data[2]=="CMDPRGUPLOAD":# 프로그램 업데이트
+                id = data[3]['id']
+                update_location = data[3]['location']
+                file_name = update_location.split("/")[-1]
+
+                # logging.info("update_location : "+update_location)
+                # logging.info("file_name : "+file_name)
+
+                #파일 다운로드
+                result_status = updatefile_download(update_location,file_name)
+
+                senddata = json.dumps([3,data[1],{"id":deviceid,"result":result_status}])
+                ws.send(senddata)
+
+                #entire.py에 업데이트 명령
+                print(json.dumps({"cmd":upgradeProgram,"path":update_file_url+file_name}), flush=True)
 
 def on_connect(ws):
         logging.info("connected!")  # 연결됨 메시지 출력
@@ -364,6 +392,9 @@ def on_close(ws, status_code, msg):
 
 # 로그 기록 
 def write_log(msg):
+        #폴더 없을시 생성
+        make_folder(log_file_url)
+
         if not os.path.exists("".join([log_file_url,getScheduleLogFIleName()])):
                 logging.info("not exist file!")
                 open("".join([log_file_url,getScheduleLogFIleName()]),"w")
@@ -398,6 +429,22 @@ def uploadfile_create_returnName(selected_file_list,log_starttime, log_stoptime)
                                 for line in file:
                                         outfile.write(line)
         return log_file_name
+
+# 파일 업데이트
+def updatefile_download(update_location,file_name):
+
+        # 업데이트 파일 없으면 생성
+        make_folder(update_file_url)
+
+        # 파일 다운로드
+        with open(update_file_url+file_name,'wb') as files :
+                response = requests.get(program_update_server_url+update_location)
+                files.write(response.content)
+
+                if not response.ok :
+                        return False
+        
+        return True
 
 # 정기보고 스케줄 실행 함수   
 def schedule_report():
@@ -434,17 +481,22 @@ def run_websocket():
         ws_app.subprotocols = ["sh1.0"]
         ws_app.run_forever(ping_interval=0, ping_timeout=30, reconnect=10)
 
-
+# 로그 및 다운로드 폴더가 존재하지 않을 경우 생성
+def make_folder(foldername):
+        if not os.path.exists(foldername[:-1]):
+                os.makedirs(foldername[:-1])
                 
 def main():        
         try:
                 logging.basicConfig(level=logging.DEBUG)
 
+                write_log("기기 프로그램 시작")
+
                 #정기보고 스케줄 등록
                 schedule.every().hour.at("00:10").do(schedule_report)
                 # schedule.every(2).seconds.do(schedule_report)
-
-
+                
+                
                 global thread_websocket
                 global thread_schedule_report
 
@@ -455,12 +507,7 @@ def main():
                 thread_websocket.start()
                 thread_schedule_report.start()
 
-
-               
-
-
-                logging.info("device start!")
-
+                logging.info("업데이트 버전 1 ")
                 
 
 
@@ -468,6 +515,7 @@ def main():
         except Exception as e:
                 write_log("메인 프로그램 에러 : "+str(e))
                 logging.info("프로그램이 사용자에 의해 중단되었습니다.")
+
 
         
 
