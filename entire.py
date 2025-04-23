@@ -30,7 +30,16 @@ import main_process
 import os
 import logging
 import json
+import time
 
+def proc_terminate(proc): # 프로세스 main_process.py 종료
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        print("강제 종료 실행")
+        proc.kill()
+        proc.wait()
 
 def proc_run(): # 프로세스로 main_process.py 실행
     return subprocess.Popen(['python','main_process.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text= True)
@@ -51,14 +60,8 @@ def run():
                 logging.info("data : "+ str(msg["cmd"]))
 
                 if msg["cmd"] == main_process.upgradeProgram:
-                    proc.terminate()
-                    try:
-                        proc.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        print("강제 종료 실행")
-                        proc.kill()
-                    finally:
-                        proc.wait()
+                    proc_terminate(proc)
+
                     with zipfile.ZipFile(msg["path"]) as zip_file :
                         #업데이트 파일 다운로드시 자신의 파일을 제외한 모든 파일 받기
                         ignore_file_name = os.path.basename(__file__)
@@ -72,8 +75,35 @@ def run():
 
                     # 파일 삭제
                     os.remove(msg["path"])
-
+                    time.sleep(1)
                     proc = proc_run()
+                    time.sleep(1)
+
+
+                elif msg["cmd"] == main_process.rebootsoftware:
+                    main_process.write_log("소프트웨어 재부팅을 요청했습니다.")
+                    
+                    proc_terminate(proc)
+
+                    time.sleep(1)
+                    proc = proc_run()
+                    time.sleep(1)
+
+                    
+
+                elif msg["cmd"] == main_process.reboothardware:
+                    main_process.write_log("하드웨어 재부팅을 요청했습니다.")
+                    
+                    proc_terminate(proc)
+                    try:
+                        result = subprocess.run(['sudo', 'reboot'], check=True, capture_output=True, text=True)
+                        main_process.write_log("하드웨어 재부팅 : "+ str(result))
+                    except subprocess.CalledProcessError as e:
+                        main_process.write_log("하드웨어 재부팅 오류 : "+ str(e))
+                        time.sleep(1)
+                        proc = proc_run()
+                        time.sleep(1)
+
             except json.JSONDecodeError:
                 pass        
 

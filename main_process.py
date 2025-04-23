@@ -65,6 +65,10 @@ update_file_url = "./update_programs/"
 
 #업데이트 명령어 커멘드
 upgradeProgram = "upgradeProgram"
+#프로그램 재부팅 명령어 커멘드
+rebootsoftware = "rebootsoftware"
+#하드웨어 재부팅 명령어 커멘드
+reboothardware = "reboothardware"
 
 
 #자동수동       - True, 1: 자동    False,0 : 수동
@@ -349,6 +353,22 @@ def on_message(ws, message):
 
                 #entire.py에 업데이트 명령
                 print(json.dumps({"cmd":upgradeProgram,"path":update_file_url+file_name}), flush=True)
+        
+        elif data[2]=="CMDREBOOTSOFT":# 프로그램 재부팅
+                id = data[3]['id']
+                senddata = json.dumps([3,data[1],{"id":deviceid,"result":True}])
+                ws.send(senddata)
+
+                #entire.py에 재부팅 명령
+                print(json.dumps({"cmd":rebootsoftware}), flush=True)
+
+        elif data[2]=="CMDREBOOTHARD":# 하드웨어 재부팅
+                id = data[3]['id']
+                senddata = json.dumps([3,data[1],{"id":deviceid,"result":True}])
+                ws.send(senddata)
+
+                #entire.py에 재부팅 명령
+                print(json.dumps({"cmd":reboothardware}), flush=True)
 
 def on_connect(ws):
         logging.info("connected!")  # 연결됨 메시지 출력
