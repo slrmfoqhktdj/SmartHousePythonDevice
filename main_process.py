@@ -174,25 +174,32 @@ def on_message(ws, message):
 
         if auto :   # 자동일때만 명령듣기
                         if data[2]=="CMDCOMP":# 컴프 onoff
-                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": data[3]['value']}])
+                                comp_onoff = data[3]['value']
+                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": True}])
                                 ws.send(senddata)
                         elif data[2]=="CMDPUMP":#펌프 onoff
-                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": data[3]['value']}])
+                                pump_onoff = data[3]['value']
+                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": True}])
                                 ws.send(senddata)
                         elif data[2]=="CMDFFAN":#유동팬 onoff
-                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": data[3]['value']}])
+                                ffan_onoff = data[3]['value']
+                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": True}])
                                 ws.send(senddata)
                         elif data[2]=="CMDEFAN":#배기팬 onoff
-                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": data[3]['value']}])
+                                efan_onoff = data[3]['value']
+                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": True}])
                                 ws.send(senddata)
                         elif data[2]=="CMDAIRCON":#냉난방기 onoff
-                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": data[3]['value']}])
+                                aircon_onoff = data[3]['value'] 
+                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": True}])
                                 ws.send(senddata)
                         elif data[2]=="CMDCO2CREATOR": #co2발생기 onoff
-                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": data[3]['value']}])
+                                co2creator_onoff = data[3]['value']
+                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": True}])
                                 ws.send(senddata)
                         elif data[2]=="CMDLED":#LED onoff
-                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": data[3]['value']}])
+                                led_onoff = data[3]['value']
+                                senddata = json.dumps([3,data[1],{"id":deviceid,"result": True}])
                                 ws.send(senddata)
                         elif data[2]=="CMDALLONOFF":#모든 onoff (웹)
                                 onoff_id = data[3]['id']
@@ -388,10 +395,21 @@ def on_connect(ws):
         # senddata = json.dumps([2,datauuid,"REPORTCO2SENSOR",{"id":"device01","value":co2_sensor_val}])  # co2센서 보고
         # senddata = json.dumps([2,datauuid,"REPORTPHECSENSOR",{"id":"device01","value":ph_ec_sensor_val}])       # ph_ec센서 보고
         # senddata = json.dumps([2,datauuid,"REPORTAuto",{"id":"device01","value":1 if auto else 0}])  # 자동 수동 바뀔때 
+        # senddata = json.dumps([2,datauuid,"ALARM",{"id":deviceid,"title":"타이틀","body":"내용"}]) # 경고 및 알림
         # ws.send(senddata)
         
         # 연결 시 boot 상태 보고 및 등록
-        senddata = json.dumps([2,create_unique_id(),"BOOTDEVICE",{"id":deviceid , "comp":comp_onoff , "pump":pump_onoff , "temp": temp_val, "humi":humi_val , "f_fan":ffan_onoff , "e_fan":efan_onoff , "aircon":aircon_onoff , "co2_sensor":co2_sensor_val,"co2_creator":co2creator_onoff , "ph_ec_sensor": ph_ec_sensor_val, "led":led_onoff , "cctv":cctv_url , "auto":auto}])  
+        senddata = json.dumps([2,create_unique_id(),"BOOTDEVICE",{"id":deviceid,"state":{"comp":comp_onoff , "pump":pump_onoff , "temp": temp_val, "humi":humi_val , "f_fan":ffan_onoff , "e_fan":efan_onoff , "aircon":aircon_onoff , "co2_sensor":co2_sensor_val,"co2_creator":co2creator_onoff , "ph_ec_sensor": ph_ec_sensor_val, "led":led_onoff , "cctv":cctv_url , "auto":auto}, 
+                                                                "appoints":[{"name":"compump","startt":appoint_compump_startTime,"stopt":appoint_compump_stopTime,"onoff":appoint_compump_onoff},
+                                                                                {"name":"ffan","startt":appoint_ffan_startTime,"stopt":appoint_ffan_stopTime,"onoff":appoint_ffan_onoff},
+                                                                                {"name":"efan","startt":appoint_efan_startTime,"stopt":appoint_efan_stopTime,"onoff":appoint_efan_onoff},
+                                                                                {"name":"aircon","startt":appoint_aircon_startTime,"stopt":appoint_aircon_stopTime,"onoff":appoint_aircon_onoff},
+                                                                                {"name":"co2creator","startt":appoint_co2creator_startTime,"stopt":appoint_co2creator_stopTime,"onoff":appoint_co2creator_onoff},
+                                                                                {"name":"led","startt":appoint_led_startTime,"stopt":appoint_led_stopTime,"onoff":appoint_led_onoff}]}])  
+        ws.send(senddata)
+
+        #알람 테스트
+        senddata = json.dumps([2,create_unique_id(),"ALARM",{"id":deviceid,"title":"타이틀","body":"알림"}])
         ws.send(senddata)
 
 def on_error(ws, err):
